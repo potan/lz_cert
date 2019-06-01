@@ -101,9 +101,37 @@ Compute (lz 3 20 "qwertyuityuuity" nil "" "" 0).
 Lemma lz_accum: forall (dat: String.string) (min size: nat) (buf win: String.string) (off: nat) (o: list Out),
    lz min size dat o buf win off = List.rev o ++ lz min size dat nil buf win off.
 Proof.
-  intros.
-  unfold lz.
-  
+  induction dat ; simpl ; intros.
+  - destruct win ; simpl.
+    + rewrite <- List.app_nil_end.
+      reflexivity.
+    + reflexivity.
+  - destruct win. simpl.
+    destruct (String.index 0 (String.String a "") buf).
+    + apply (IHdat min size buf (String.String a "") n o).
+    + destruct (String.index 0 "" (buffer size buf (String.String a ""))) ; simpl.
+      * set (F := IHdat min size (buffer size buf (String.String a "")) "" n (Str (String.String a "") :: o)).
+        simpl in F.
+        Search "app_assoc".
+        rewrite List.app_assoc_reverse in F.
+        simpl in F.
+        set (O := IHdat min size (buffer size buf (String.String a "")) "" n (Str (String.String a "") :: nil)).
+        simpl in O.
+        rewrite <- O in F.
+        apply F.
+      * set (F := IHdat min size (buffer size buf (String.String a "")) "" 0 (Str (String.String a "") :: o)).
+        simpl in F.
+        Search "app_assoc".
+        rewrite List.app_assoc_reverse in F.
+        simpl in F.
+        set (O := IHdat min size (buffer size buf (String.String a "")) "" 0 (Str (String.String a "") :: nil)).
+        simpl in O.
+        rewrite <- O in F.
+        apply F.
+     + destruct (String.index 0
+                    (String.append (String.String a0 win) (String.String a "")) buf) eqn:E.
+       * apply (IHdat min size buf (String.append (String.String a0 win) (String.String a "")) n o).
+       * 
   
 Theorem lz_correct: forall (dat: String.string) (min size: nat),
      unlz (lz min size dat nil "" "" 0) "" = dat.
