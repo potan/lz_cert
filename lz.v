@@ -23,6 +23,34 @@ Definition err {A: Type} : A :=
    end.
 
 
+Fixpoint unlz (comp: list Out) (acc: string) : string :=
+  match comp with
+  | nil => acc
+  | h :: t => unlz t (append acc
+                (match h with
+                 | Str s => s
+                 | Ref off size => substring (length acc - off) size acc
+                 end))
+  end.
+
+Compute (unlz (Str "qwertyui" :: Ref 4 3 :: Ref 5 4 :: nil) "").
+
+Lemma string_app_s_empty (s: string): append s "" = s.
+Proof.
+ induction s.
+ - simpl. reflexivity.
+ - simpl. rewrite IHs. reflexivity.
+Qed.
+
+Lemma unlz_accum (input: list Out): forall (acc: string),
+    unlz input acc = append acc (unlz input "").
+Proof.
+   induction input.
+   { intro. simpl. rewrite string_app_s_empty. reflexivity. }
+   simpl.
+   intro.
+   Abort.
+
 Fixpoint skipper (bufsize: nat) (buf acc win : string)
          : (string * string * string * nat) :=
    match win with
@@ -83,17 +111,6 @@ Qed.
 
 Compute (lz 3 10 "aaaaaaaaaaaaa" nil "" "" 0).
 
-Fixpoint unlz (comp: list Out) (acc: string) : string :=
-  match comp with
-  | nil => acc
-  | h :: t => unlz t (append acc
-                (match h with
-                 | Str s => s
-                 | Ref off size => substring (length acc - off) size acc
-                 end))
-  end.
-
-Compute (unlz (Str "qwertyui" :: Ref 4 3 :: Ref 5 4 :: nil) "").
 Compute (lz 3 20 "qwertyuityuuity" nil "" "" 0).
 
 Lemma lz_accum: forall (dat: string) (min size: nat) (buf win: string) (off: nat) (o: list Out),
@@ -152,10 +169,11 @@ Proof.
 Qed.
 
 
-Theorem lz_correct: forall (dat: string) (min size: nat),
-     unlz (lz min size dat nil "" "" 0) "" = dat.
+Theorem lz_correct: forall (dat buf: string) (min size: nat),
+     unlz (lz min size dat nil buf "" 0) "" = dat.
 Proof.
   induction dat ; simpl.
   { reflexivity. }
   destruct size ; simpl ; unfold buffer ; simpl.
+  - apply (IHdat min 0 
 Abort.
