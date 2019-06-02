@@ -16,6 +16,22 @@ Compute (buffer 8 "qwertyui" "asdf").
 
 Inductive Out: Set := Str: string -> Out | Ref: nat -> nat -> Out.
 
+Definition out_size (o: Out) : nat :=
+  match o with
+  | Str s => length s
+  | Ref _ n => n
+  end.
+
+Inductive out_correct: nat -> list Out -> Prop :=
+  | out_empty (p: nat) : out_correct p nil
+  | out_str (p: nat) (s: string) (tl: list Out):
+          out_correct (p + length s) tl
+       -> out_correct p (Str s :: tl)
+  | out_ref (p off size: nat) (tl: list Out):
+          p > off + size
+       -> out_correct (p + size) tl
+       -> out_correct p (Ref off size :: tl).
+
 Axiom undefined: False.
 
 Definition err {A: Type} : A :=
@@ -42,14 +58,7 @@ Proof.
  - simpl. rewrite IHs. reflexivity.
 Qed.
 
-Lemma unlz_accum (input: list Out): forall (acc: string),
-    unlz input acc = append acc (unlz input "").
-Proof.
-   induction input.
-   { intro. simpl. rewrite string_app_s_empty. reflexivity. }
-   simpl.
-   intro.
-   Abort.
+
 
 Fixpoint skipper (bufsize: nat) (buf acc win : string)
          : (string * string * string * nat) :=
@@ -101,7 +110,40 @@ Fixpoint lz
              end
      end.
 
-Compute (lz 3 10 "" nil "aaaa" "aaaa" 0).
+Fixpoint lz_stream
+   (min bufsize: nat)
+   (input: string)
+   (buf: string)
+   (win: string)
+   (off: nat)
+      : list Out :=
+    match input with
+    | "" => match win with
+            | "" => nil
+            | String _ _ =>
+                           (if Nat.ltb min (length win)
+                            then Ref (length buf - off) (length win)
+                            else Str win
+                           ) :: nil
+            end
+    | String c s =>
+             let nwin := append win (String c "") in
+             match index 0 nwin buf with
+             | Some noff => lz_stream min bufsize s buf nwin noff
+             | None =>  match skipper bufsize buf "" nwin with
+                        | (out, nnbuf, nnwin, nnoff) =>
+                            let nacc :=
+                              if Nat.ltb min (length win)
+                              then
+                                Str out :: Ref (length buf - off) (length win) :: nil
+                              else
+                                Str (append out win) :: nil
+                            in nacc ++ lz_stream min bufsize s nnbuf nnwin nnoff
+                        end
+             end
+     end.
+
+Compute (lz_stream 3 10 "" "aaaa" "aaaa" 0).
 
 Example lzCheck1: lz 3 10 "aaaa" nil "aaaa" "" 0 = Ref 4 4 :: nil.
 Proof.
@@ -168,12 +210,42 @@ Proof.
             apply F.
 Qed.
 
+Search "minus".
 
-Theorem lz_correct: forall (dat buf: string) (min size: nat),
-     unlz (lz min size dat nil buf "" 0) "" = dat.
+Lemma index_substring (buf win : string) (off: nat) :
+   index 0 win buf = Some off -> substring off (length win) buf = win /\ length win <= length buf.
+Proof.
+  intro.
+  set (S := index_correct1 0 off win buf H).
+  split.
+  - exact S.
+  - destruct win ; simpl.
+    + destruct buf ; simpl.
+      * constructor.
+      * apply le_0_n.
+    + Abort.
+        
+
+Search "substring".
+
+Theorem lz_stream_correct: forall (dat win buf: string) (off minl size: nat),
+     index 0 win buf = Some off ->
+     unlz (lz_stream minl size dat buf win off) buf = append (append buf win) dat.
 Proof.
   induction dat ; simpl.
-  { reflexivity. }
-  destruct size ; simpl ; unfold buffer ; simpl.
-  - apply (IHdat min 0 
+  - destruct win.
+    + simpl.
+      intro.
+      rewrite string_app_s_empty.
+      rewrite string_app_s_empty.
+      reflexivity.
+    + intros.
+      rewrite string_app_s_empty.
+      simpl.
+      destruct (Nat.ltb minl (S (length win))) eqn:E.
+      * reflexivity.
+      *
+  - destruct size ; simpl ; unfold buffer ; simpl.
+    + apply (IHdat min 0 
 Abort.
+
