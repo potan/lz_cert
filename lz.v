@@ -129,8 +129,12 @@ Proof.
      + destruct (String.index 0
                     (String.append (String.String a0 win) (String.String a "")) buf) eqn:E.
        * apply (IHdat min size buf (String.append (String.String a0 win) (String.String a "")) n o).
-       * 
+       * destruct (skipper size buf "" (String a0 win ++ String a "")).
+         destruct p. destruct p.
+         destruct (Nat.ltb min (length (String a0 win))).
+         **  
 Abort.
+
 
 Theorem lz_correct: forall (dat: string) (min size: nat),
      unlz (lz min size dat nil "" "" 0) "" = dat.
