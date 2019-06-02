@@ -210,23 +210,29 @@ Proof.
             apply F.
 Qed.
 
-Search "minus".
 
 Lemma index_substring (buf win : string) (off: nat) :
-   index 0 win buf = Some off -> substring off (length win) buf = win /\ length win <= length buf.
+   index 0 win buf = Some off -> substring off (length win) buf = win /\ off <= length buf.
 Proof.
   intro.
   set (S := index_correct1 0 off win buf H).
   split.
   - exact S.
-  - destruct win ; simpl.
-    + destruct buf ; simpl.
-      * constructor.
-      * apply le_0_n.
-    + Abort.
+  - Admitted.
         
 
-Search "substring".
+Search "minus".
+
+Lemma minus_minus (a b: nat) : a <= b -> b - (b - a) = a.
+Proof.
+  intro.
+  rewrite (Minus.le_plus_minus a b H) at 1.
+  Search "add_com".
+  rewrite (PeanoNat.Nat.add_comm a (b-a)).
+  rewrite (Minus.minus_plus (b - a) a).
+  reflexivity.
+Qed.
+  
 
 Theorem lz_stream_correct: forall (dat win buf: string) (off minl size: nat),
      index 0 win buf = Some off ->
@@ -243,9 +249,10 @@ Proof.
       rewrite string_app_s_empty.
       simpl.
       destruct (Nat.ltb minl (S (length win))) eqn:E.
-      * reflexivity.
+      * set (SUB := index_substring buf (String a win) off H).
+        destruct SUB.
+        rewrite (minus_minus off (length buf) H1).
       *
-  - destruct size ; simpl ; unfold buffer ; simpl.
-    + apply (IHdat min 0 
+
 Abort.
 
