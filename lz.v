@@ -132,8 +132,24 @@ Proof.
        * destruct (skipper size buf "" (String a0 win ++ String a "")).
          destruct p. destruct p.
          destruct (Nat.ltb min (length (String a0 win))).
-         **  
-Abort.
+         ** set (F := IHdat min size s1 s n ((Str s0 :: Ref (length buf - off) (length (String a0 win)) :: o))).
+            simpl in F.
+            rewrite List.app_assoc_reverse in F.
+            rewrite List.app_assoc_reverse in F.
+            simpl in F.
+            set (O := IHdat min size s1 s n ((Str s0 :: Ref (length buf - off) (length (String a0 win)) :: nil))).
+            simpl in O.
+            rewrite <- O in F.
+            apply F.
+         ** set (F := IHdat min size s1 s n (Str (s0 ++ String a0 win) :: o)).
+            simpl in F.
+            rewrite List.app_assoc_reverse in F.
+            simpl in F.
+            set (O := IHdat min size s1 s n (Str (s0 ++ String a0 win) :: nil)).
+            simpl in O.
+            rewrite <- O in F.
+            apply F.
+Qed.
 
 
 Theorem lz_correct: forall (dat: string) (min size: nat),
