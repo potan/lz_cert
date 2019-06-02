@@ -252,7 +252,11 @@ Proof.
       * set (SUB := index_substring buf (String a win) off H).
         destruct SUB.
         rewrite (minus_minus off (length buf) H1).
-      *
+        simpl in H0.
+        rewrite H0.
+        reflexivity.
+      * reflexivity.
+  -
 
 Abort.
 
